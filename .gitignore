@@ -1,0 +1,11 @@
+# Node modules
+node_modules/
+.next/
+
+# Environment files
+.env
+
+# Build output
+dist/
+build/
+.next/

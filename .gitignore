@@ -1,11 +1,14 @@
-# Node modules
+# Dependency folders
 node_modules/
 .next/
+
+# Build output
+.next/
+dist/
+build/
 
 # Environment files
 .env
 
-# Build output
-dist/
-build/
-.next/
+# System files
+.DS_Store

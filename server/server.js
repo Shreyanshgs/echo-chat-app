@@ -262,16 +262,80 @@ app.get('/api/me', async (req, res) => {
     }
 });
 
-// start listening to test requests
-// app.listen(6543, () => {
-//     console.log('🚀 Server is running on http://localhost:6543');
-// });
+
+// set up and run websocket server
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+    console.log('New client connected: ', socket.id);
+
+    socket.on('register', (userId) => {
+        onlineUsers.set(userId, socket.id);
+        console.log(`User ${userId} registered with socket ${socket.id}`);
+    });
+
+    socket.on('send_message', async ({ senderId, recipientId, content }) => {
+        try {
+            // Save message
+            await pool.query(
+                'INSERT INTO messages (sender_id, recipient_id, message) VALUES ($1, $2, $3)',
+                [senderId, recipientId, content]
+            );
+
+            // Get sender's username
+            const senderRes = await pool.query('SELECT username FROM users WHERE id = $1', [senderId]);
+            const senderUsername = senderRes.rows[0]?.username || 'Unknown';
+
+            const messageData = {
+                senderId,
+                senderUsername,
+                content,
+                timestamp: new Date().toISOString(),
+            };
+
+            const senderSocketId = onlineUsers.get(senderId);
+            if (senderSocketId) {
+                io.to(senderSocketId).emit('receive_message', messageData);
+            }
+
+            const recipientSocketId = onlineUsers.get(recipientId);
+            if (recipientSocketId) {
+                io.to(recipientSocketId).emit('receive_message', messageData);
+            }
+
+        } catch (err) {
+            console.error('Error saving or sending message:', err);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        for (const [userId, socketId] of onlineUsers.entries()) {
+            if (socketId === socket.id) {
+                onlineUsers.delete(userId);
+                break;
+            }
+        }
+        console.log('Client disconnected:', socket.id);
+    });
+
+});
 
 
-  
-app.listen(6543, '0.0.0.0', () => {
+server.listen(6543, '0.0.0.0', () => {
     console.log('🚀 Server is running on http://0.0.0.0:6543');
-  });
+});
 
 
 // TESTING CONNECTION

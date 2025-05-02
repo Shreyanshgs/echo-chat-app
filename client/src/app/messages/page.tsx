@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
+
 
 interface Message {
     senderId: string;
@@ -29,6 +31,33 @@ export default function MessagesPage() {
     const router = useRouter();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevMessageCountRef = useRef<number>(0);
+    const socketRef = useRef<Socket | null>(null);
+
+    // connect socket
+    useEffect(() => {
+        socketRef.current = io('http://localhost:6543');
+        return () => {
+            socketRef.current?.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+        const handleReceiveMessage = (message: Message) => {
+            if (
+                selectedConversation &&
+                (message.senderId === selectedConversation.id || message.senderId === currentUserId)
+              ) {
+                setMessages((prev) => [...prev, message]);
+              }
+        }
+
+        socketRef.current.on('receive_message', handleReceiveMessage);
+
+        return () => {
+            socketRef.current?.off('receive_message', handleReceiveMessage);
+        };
+    }, [selectedConversation]);
 
     // autoscroll to most recent message
     useEffect(() => {
@@ -53,6 +82,7 @@ export default function MessagesPage() {
             setCurrentUserEmail(data.email);
             setCurrentUserId(data.id);
             setCurrentUsername(data.username);
+            socketRef.current?.emit('register', data.id);
         };
 
         fetchMe();
@@ -77,9 +107,9 @@ export default function MessagesPage() {
 
         fetchUsers();
 
-        const interval = setInterval(fetchUsers, 10000);
-        return () => clearInterval(interval);
-        
+        // const interval = setInterval(fetchUsers, 10000);
+        // return () => clearInterval(interval);
+
     }, []);
 
     // fetch conversations when the page loads
@@ -101,9 +131,9 @@ export default function MessagesPage() {
         };
 
         fetchConversations(); // initial load
-        const interval = setInterval(fetchConversations, 2000); // update every 2 seconds
+        // const interval = setInterval(fetchConversations, 2000); // update every 2 seconds
 
-        return () => clearInterval(interval);
+        // return () => clearInterval(interval);
     }, []);
 
     // fetch messages when a conversation is selected
@@ -123,30 +153,30 @@ export default function MessagesPage() {
 
         fetchMessages(); // fetch immediately when conversation is selected
 
-        const interval = setInterval(fetchMessages, 2000); // fetch every 10 seconds
+        // const interval = setInterval(fetchMessages, 2000);
 
-        return () => clearInterval(interval); // clean up when unmounting or changing conversation
+        // return () => clearInterval(interval);
     }, [selectedConversation]);
 
     // handle when user sends a new message in current conversation
     const handleSendMessage = async () => {
-        if (newMessage.trim()) {
-            const res = await fetch(`http://localhost:6543/api/conversations/${selectedConversation?.id}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ content: newMessage }),
+        if (newMessage.trim() && selectedConversation) {
+            // const res = await fetch(`http://localhost:6543/api/conversations/${selectedConversation?.id}/messages`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            //     },
+            //     body: JSON.stringify({ content: newMessage }),
+            // });
+
+            socketRef.current?.emit('send_message', {
+                senderId: currentUserId,
+                recipientId: selectedConversation.id,
+                content: newMessage,
             });
 
-            if (res.ok) {
-                // setMessages((prevMessages) => [
-                //     ...prevMessages,
-                //     { sender: 'You', content: newMessage, timestamp: new Date().toLocaleString('sv-SE')},
-                // ]);
-                setNewMessage('');
-            }
+            setNewMessage('');
         }
     };
 

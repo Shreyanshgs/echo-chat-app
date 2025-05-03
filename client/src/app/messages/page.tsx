@@ -32,6 +32,10 @@ export default function MessagesPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevMessageCountRef = useRef<number>(0);
     const socketRef = useRef<Socket | null>(null);
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        router.push('/login');
+    };
 
     // connect socket
     useEffect(() => {
@@ -47,9 +51,9 @@ export default function MessagesPage() {
             if (
                 selectedConversation &&
                 (message.senderId === selectedConversation.id || message.senderId === currentUserId)
-              ) {
+            ) {
                 setMessages((prev) => [...prev, message]);
-              }
+            }
         }
 
         socketRef.current.on('receive_message', handleReceiveMessage);
@@ -87,6 +91,8 @@ export default function MessagesPage() {
 
         fetchMe();
     }, []);
+
+
 
     // fetch possible new users to talk to
     useEffect(() => {
@@ -206,13 +212,21 @@ export default function MessagesPage() {
                         ))}
                     </ul>
                 )}
+                
+                <button 
+                    className="mb-4 ml-4 bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                    onClick = {handleLogout}
+                >
+                    Logout
+                </button>
+
                 <h2 className="text-2xl font-semibold mb-4">Conversations</h2>
                 <ul className="mb-4 max-h-40 overflow-y-auto border rounded p-2 bg-black">
                     {conversations.map((conversation) => (
                         <li
                             key={conversation.id}
                             onClick={() => setSelectedConversation(conversation)}
-                            className="cursor-pointer hover:bg-gray-200 p-2 rounded mb-2"
+                            className="cursor-pointer hover:bg-gray-200 p-2 rounded"
                         >
                             {conversation.username ?? conversation.email ?? 'Unnamed'}
                         </li>

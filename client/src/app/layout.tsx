@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Leckerli_One, Zain} from "next/font/google";
 import "./globals.css";
+import Navbar from "./components/NavBar"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -11,6 +12,18 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const leckerLiOne = Leckerli_One({
+  variable: "--font-leckerli-one",
+  subsets: ["latin"],
+  weight: "400",
+})
+
+const zain = Zain({
+  variable: "--font-zain",
+  subsets: ["latin"],
+  weight: "700",
+})
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -25,8 +38,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${zain.variable} ${geistSans.variable} ${leckerLiOne.variable} ${geistMono.variable} antialiased`}
       >
+        <Navbar/>
         {children}
       </body>
     </html>

@@ -33,42 +33,52 @@ export default function LoginPage() {
     };
 
     const handleGoHome = () => {
-        router.push('/');  
+        router.push('/');
     };
 
     return (
-        <main className="min-h-screen flex flex-col items-center justify-center p-8">
-            <h1 className="text-3xl font-bold mb-6">Login</h1>
-            <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
-                <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full p-2 border rounded"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    className="w-full p-2 border rounded"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                >
-                    Log In
-                </button>
-            </form>
-            <button
-                onClick = { handleGoHome }
-                className = "mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        <div className="flex flex-col md:flex-row min-h-screen">
+            <div
+                className="w-full md:w-5/7 bg-cover bg-center relative"
             >
-            Back to Home
-            </button>
-        </main>
+                <video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src="/backgroundvid.mp4" // 🟡 Put your video in /public
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                />
+            </div>
+            <main className="min-h-screen md:w-2/7 flex flex-col items-center justify-center p-8 bg-[#f1e9e6] text-black">
+                <div className="bg-[#f1e9e6] px-4 py-4 rounded ">
+                    <h1 className="font-zain text-5xl font-bold text-center mb-6">Login</h1>
+                    <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            className="w-full p-2 border rounded"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            className="w-full p-2 border rounded"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <button
+                            type="submit"
+                            className="w-full font-zain text-3xl px-6 py-2 bg-[#ebe1c7] text-black rounded hover:bg-[#23262a] hover:text-[#f1e9e6] border-2"
+                        >
+                            Submit
+                        </button>
+                    </form>
+                </div>
+            </main>
+        </div>
     );
 }

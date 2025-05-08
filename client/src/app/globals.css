@@ -8,8 +8,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-climate: var(--font-climate-crisis);
+  --font-lecker: var(--font-leckerli-one);
+  --font-zain: var(--font-zain);
 }
 
 @media (prefers-color-scheme: dark) {

@@ -28,12 +28,27 @@ __turbopack_context__.s({
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/rsc/react-jsx-dev-runtime.js [app-rsc] (ecmascript)");
 ;
 function Home() {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {}, void 0, false, {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
+        className: "min-h-screen flex flex-col items-center justify-center text-center px-4 bg-gradient-to-br from purple-100 to-white"
+    }, void 0, false, {
         fileName: "[project]/src/app/page.tsx",
         lineNumber: 5,
         columnNumber: 5
     }, this);
-}
+} // return (
+ //   <main className = "min-h-screen flex flex-col items-center justify-center p-8">
+ //     <h1 className = "text-4xl font-bold mb-4">Welcome to Echo</h1>
+ //     <p className = "mb-6">Login or sign up to start messaging</p>
+ //     <div className = "space-x-4">
+ //       <Link href="/login">
+ //         <button className = "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Login</button>
+ //       </Link>
+ //       <Link href = "/signup">
+ //         <button className = "px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Sign Up</button>
+ //       </Link>
+ //     </div>
+ //   </main>
+ // );
 }}),
 "[project]/src/app/page.tsx [app-rsc] (ecmascript, Next.js server component)": ((__turbopack_context__) => {
 

@@ -41,56 +41,121 @@ export default function SignUpPage() {
     }
 
     return (
-        <main className="min-h-screen flex flex-col items-center justify-center p-8">
-            <h1 className="text-3xl font-bold mb-6">Sign Up</h1>
-            <form onSubmit={handleSignUp} className="w-full max-w-sm space-y-4">
-                <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full p-2 border rounded"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-                <input
-                    type="text"
-                    placeholder="Username"
-                    className="w-full p-2 border rounded"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    className="w-full p-2 border rounded"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    className="w-full p-2 border rounded"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                />
-                <button
-                    type="submit"
-                    className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-                >
-                    Sign Up
-                </button>
-            </form>
+        <div className="flex flex-col md:flex-row min-h-screen">
+            {/* Left side: Signup form */}
+            <main className="w-full md:w-2/7 flex flex-col items-center justify-center p-8 bg-[#f1e9e6] text-black">
+                <h1 className="font-zain text-5xl font-bold mb-6">Sign Up</h1>
+                <form onSubmit={handleSignUp} className="w-full max-w-sm space-y-4">
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        className="w-full p-2 border rounded"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="text"
+                        placeholder="Username"
+                        className="w-full p-2 border rounded"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        className="w-full p-2 border rounded"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Confirm Password"
+                        className="w-full p-2 border rounded"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                    />
+                    <button
+                        type="submit"
+                        className="w-full font-zain text-3xl px-6 py-2 bg-[#ebe1c7] text-black rounded hover:bg-[#23262a] hover:text-[#f1e9e6] border-2"
+                    >
+                        Submit
+                    </button>
+                </form>
 
-            <button
-                onClick={handleGoHome}
-                className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            </main>
+
+            {/* Right side: Image + Text */}
+            <div
+                className="w-full md:w-5/7 bg-cover bg-center relative"
             >
-                Back to Home
-            </button>
-        </main>
+                <video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src="/backgroundvid.mp4" // 🟡 Put your video in /public
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                />
+            </div>
+        </div>
     );
+
+    // return (
+    //     <main className="min-h-screen flex flex-col items-center justify-center p-8">
+    //         <h1 className="text-3xl font-bold mb-6">Sign Up</h1>
+    //         <form onSubmit={handleSignUp} className="w-full max-w-sm space-y-4">
+    //             <input
+    //                 type="email"
+    //                 placeholder="Email"
+    //                 className="w-full p-2 border rounded"
+    //                 value={email}
+    //                 onChange={(e) => setEmail(e.target.value)}
+    //                 required
+    //             />
+    //             <input
+    //                 type="text"
+    //                 placeholder="Username"
+    //                 className="w-full p-2 border rounded"
+    //                 value={username}
+    //                 onChange={(e) => setUsername(e.target.value)}
+    //                 required
+    //             />
+    //             <input
+    //                 type="password"
+    //                 placeholder="Password"
+    //                 className="w-full p-2 border rounded"
+    //                 value={password}
+    //                 onChange={(e) => setPassword(e.target.value)}
+    //                 required
+    //             />
+    //             <input
+    //                 type="password"
+    //                 placeholder="Confirm Password"
+    //                 className="w-full p-2 border rounded"
+    //                 value={confirmPassword}
+    //                 onChange={(e) => setConfirmPassword(e.target.value)}
+    //                 required
+    //             />
+    //             <button
+    //                 type="submit"
+    //                 className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+    //             >
+    //                 Sign Up
+    //             </button>
+    //         </form>
+
+    //         <button
+    //             onClick={handleGoHome}
+    //             className="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+    //         >
+    //             Back to Home
+    //         </button>
+
+    //     </main>
+    // );
 
 }

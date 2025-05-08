@@ -1,5 +1,3 @@
-# echo-chat-app
-
 # Echo Chat App
 
 **Echo** is a real-time chat web app built with Next.js, Tailwind CSS, Node.js, PostgreSQL, and Socket.IO. It allows users to sign up, log in, and exchange messages instantly — with a clean, responsive UI and smooth animations.

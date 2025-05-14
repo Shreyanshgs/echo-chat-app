@@ -42,8 +42,26 @@ function MessagesPage() {
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "MessagesPage.useEffect": ()=>{
             socketRef.current = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$socket$2e$io$2d$client$2f$build$2f$esm$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["io"])('http://localhost:6543');
+            const handleNewConversation = {
+                "MessagesPage.useEffect.handleNewConversation": (newConvo)=>{
+                    setConversations({
+                        "MessagesPage.useEffect.handleNewConversation": (prev)=>{
+                            const exists = prev.some({
+                                "MessagesPage.useEffect.handleNewConversation.exists": (c)=>c.id === newConvo.id
+                            }["MessagesPage.useEffect.handleNewConversation.exists"]);
+                            if (exists) return prev;
+                            return [
+                                newConvo,
+                                ...prev
+                            ];
+                        }
+                    }["MessagesPage.useEffect.handleNewConversation"]);
+                }
+            }["MessagesPage.useEffect.handleNewConversation"];
+            socketRef.current.on('newConversation', handleNewConversation);
             return ({
                 "MessagesPage.useEffect": ()=>{
+                    socketRef.current?.off('newConversation', handleNewConversation);
                     socketRef.current?.disconnect();
                 }
             })["MessagesPage.useEffect"];
@@ -200,76 +218,108 @@ function MessagesPage() {
         }
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "flex min-h-screen",
+        className: "flex min-h-screen bg-[#f1e9e6] text-[#23262a]",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "w-1/4 p-4 border-r",
                 children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        className: "mb-4 bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600",
-                        onClick: ()=>setShowUserList(!showUserList),
-                        children: "New Message"
-                    }, void 0, false, {
-                        fileName: "[project]/src/app/messages/page.tsx",
-                        lineNumber: 192,
-                        columnNumber: 17
-                    }, this),
-                    showUserList && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
-                        className: "mb-4 max-h-40 overflow-y-auto border rounded p-2 bg-black",
-                        children: allUsers.map((user)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                onClick: ()=>{
-                                    setSelectedConversation(user);
-                                    setShowUserList(false);
-                                },
-                                className: "cursor-pointer hover:bg-gray-100 p-1 rounded",
-                                children: user.username ?? user.email
-                            }, user.id, false, {
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex flex-col items-center",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex justify-center space-x-4 mb-4",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        className: "bg-green-500 text-white border-2 border-green-600 py-1 px-3 rounded hover:bg-green-600",
+                                        onClick: ()=>setShowUserList(!showUserList),
+                                        children: "New Conversation"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/app/messages/page.tsx",
+                                        lineNumber: 209,
+                                        columnNumber: 25
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        className: "bg-red-500 border-2 border-red-600 text-white py-1 px-3 rounded hover:bg-red-600",
+                                        onClick: handleLogout,
+                                        children: "Logout"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/app/messages/page.tsx",
+                                        lineNumber: 216,
+                                        columnNumber: 25
+                                    }, this)
+                                ]
+                            }, void 0, true, {
                                 fileName: "[project]/src/app/messages/page.tsx",
-                                lineNumber: 202,
-                                columnNumber: 29
-                            }, this))
-                    }, void 0, false, {
+                                lineNumber: 208,
+                                columnNumber: 21
+                            }, this),
+                            showUserList && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
+                                className: "max-h-40 overflow-y-auto border-2 border-green-600 rounded p-2 mb-3 bg-[#f1e9e6] w-100",
+                                children: allUsers.map((user)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                        onClick: ()=>{
+                                            setSelectedConversation(user);
+                                            setShowUserList(false);
+                                        },
+                                        className: "cursor-pointer text-black hover:bg-green-300 p-2 rounded",
+                                        children: user.username ?? user.email
+                                    }, user.id, false, {
+                                        fileName: "[project]/src/app/messages/page.tsx",
+                                        lineNumber: 227,
+                                        columnNumber: 33
+                                    }, this))
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/messages/page.tsx",
+                                lineNumber: 225,
+                                columnNumber: 25
+                            }, this)
+                        ]
+                    }, void 0, true, {
                         fileName: "[project]/src/app/messages/page.tsx",
-                        lineNumber: 200,
-                        columnNumber: 21
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        className: "mb-4 ml-4 bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600",
-                        onClick: handleLogout,
-                        children: "Logout"
-                    }, void 0, false, {
-                        fileName: "[project]/src/app/messages/page.tsx",
-                        lineNumber: 216,
+                        lineNumber: 207,
                         columnNumber: 17
                     }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                        className: "text-2xl font-semibold mb-4",
-                        children: "Conversations"
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex flex-col items-center",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                            className: "text-4xl font-semibold mb-4 justify-center",
+                            children: "Conversations"
+                        }, void 0, false, {
+                            fileName: "[project]/src/app/messages/page.tsx",
+                            lineNumber: 243,
+                            columnNumber: 21
+                        }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/messages/page.tsx",
-                        lineNumber: 223,
+                        lineNumber: 242,
                         columnNumber: 17
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
-                        className: "mb-4 max-h-40 overflow-y-auto border rounded p-2 bg-black",
-                        children: conversations.map((conversation)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
-                                onClick: ()=>setSelectedConversation(conversation),
-                                className: "cursor-pointer hover:bg-gray-200 p-2 rounded",
-                                children: conversation.username ?? conversation.email ?? 'Unnamed'
-                            }, conversation.id, false, {
-                                fileName: "[project]/src/app/messages/page.tsx",
-                                lineNumber: 226,
-                                columnNumber: 25
-                            }, this))
+                        className: "text-2xl mb-4 h-180 overflow-y-auto border rounded p-2 bg-[#f1e9e6]",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "flex flex-col items-center",
+                            children: conversations.map((conversation)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                    onClick: ()=>setSelectedConversation(conversation),
+                                    className: "cursor-pointer hover:bg-gray-400 p-2 rounded justify-center",
+                                    children: conversation.username ?? conversation.email ?? 'Unnamed'
+                                }, conversation.id, false, {
+                                    fileName: "[project]/src/app/messages/page.tsx",
+                                    lineNumber: 249,
+                                    columnNumber: 25
+                                }, this))
+                        }, void 0, false, {
+                            fileName: "[project]/src/app/messages/page.tsx",
+                            lineNumber: 246,
+                            columnNumber: 17
+                        }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/messages/page.tsx",
-                        lineNumber: 224,
+                        lineNumber: 245,
                         columnNumber: 17
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/messages/page.tsx",
-                lineNumber: 191,
+                lineNumber: 206,
                 columnNumber: 13
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -281,7 +331,7 @@ function MessagesPage() {
                             children: selectedConversation.username ?? selectedConversation.email
                         }, void 0, false, {
                             fileName: "[project]/src/app/messages/page.tsx",
-                            lineNumber: 240,
+                            lineNumber: 264,
                             columnNumber: 25
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -295,14 +345,14 @@ function MessagesPage() {
                                                 children: message.senderId === currentUserId ? 'You' : message.senderUsername
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/messages/page.tsx",
-                                                lineNumber: 244,
+                                                lineNumber: 268,
                                                 columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 children: message.content
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/messages/page.tsx",
-                                                lineNumber: 247,
+                                                lineNumber: 271,
                                                 columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -315,26 +365,26 @@ function MessagesPage() {
                                                 })
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/messages/page.tsx",
-                                                lineNumber: 248,
+                                                lineNumber: 272,
                                                 columnNumber: 37
                                             }, this)
                                         ]
                                     }, index, true, {
                                         fileName: "[project]/src/app/messages/page.tsx",
-                                        lineNumber: 243,
+                                        lineNumber: 267,
                                         columnNumber: 33
                                     }, this)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     ref: messagesEndRef
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/messages/page.tsx",
-                                    lineNumber: 256,
+                                    lineNumber: 280,
                                     columnNumber: 29
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/messages/page.tsx",
-                            lineNumber: 241,
+                            lineNumber: 265,
                             columnNumber: 25
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -348,7 +398,7 @@ function MessagesPage() {
                                     placeholder: "Type a message..."
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/messages/page.tsx",
-                                    lineNumber: 259,
+                                    lineNumber: 283,
                                     columnNumber: 29
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -357,13 +407,13 @@ function MessagesPage() {
                                     children: "Send"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/messages/page.tsx",
-                                    lineNumber: 266,
+                                    lineNumber: 290,
                                     columnNumber: 29
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/messages/page.tsx",
-                            lineNumber: 258,
+                            lineNumber: 282,
                             columnNumber: 25
                         }, this)
                     ]
@@ -372,18 +422,18 @@ function MessagesPage() {
                     children: "Select a conversation to view messages"
                 }, void 0, false, {
                     fileName: "[project]/src/app/messages/page.tsx",
-                    lineNumber: 275,
+                    lineNumber: 299,
                     columnNumber: 21
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/messages/page.tsx",
-                lineNumber: 237,
+                lineNumber: 261,
                 columnNumber: 13
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/messages/page.tsx",
-        lineNumber: 190,
+        lineNumber: 205,
         columnNumber: 9
     }, this);
 }

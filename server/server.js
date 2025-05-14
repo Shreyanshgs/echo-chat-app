@@ -31,7 +31,7 @@ app.post('/api/signup', async (req, res) => {
     const { email, username, password } = req.body;
 
     try {
-        // check if user email already exists
+        // check if username/email already exists
         const userEmail = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         if (userEmail.rows.length > 0) {
             return res.status(400).json({ message: 'Email already registered' });
@@ -122,7 +122,7 @@ app.get('/api/conversations', async (req, res) => {
         const conversations = result.rows.map((row) => ({
             id: row.user_id,
             email: row.user_email,
-            username: row.user_username, // now this will always be defined
+            username: row.user_username, 
         }));
 
         res.json({ conversations });
@@ -294,10 +294,17 @@ io.on('connection', (socket) => {
                 [senderId, recipientId, content]
             );
 
-            // Get sender's username
-            const senderRes = await pool.query('SELECT username FROM users WHERE id = $1', [senderId]);
+            // Get sender's info
+            const senderRes = await pool.query('SELECT username, email FROM users WHERE id = $1', [senderId]);
             const senderUsername = senderRes.rows[0]?.username || 'Unknown';
+            const senderEmail = senderRes.rows[0]?.username || 'Unknown';
+            
+            // get recipient's info
+            const recipientRes = await pool.query('SELECT username, email FROM users WHERE id = $1', [recipientId]);
+            const recipientUsername = recipientRes.rows[0]?.username || 'Unknown';
+            const recipientEmail = recipientRes.rows[0]?.username || 'Unknown';
 
+            // put message/metadata into container
             const messageData = {
                 senderId,
                 senderUsername,
@@ -313,6 +320,29 @@ io.on('connection', (socket) => {
             const recipientSocketId = onlineUsers.get(recipientId);
             if (recipientSocketId) {
                 io.to(recipientSocketId).emit('receive_message', messageData);
+            }
+
+            // check if new conversation
+            const convoCheck = await pool.query(
+                `SELECT COUNT(*) FROM messages WHERE
+                (sender_id = $1 AND recipient_id = $2)
+                OR (sender_id = $2 AND recipient_id = $1)`,
+                [senderId, recipientId]
+            );
+
+            // if new, tell sockets to add conversation to conversation list
+            const msgCount = parseInt(convoCheck.rows[0].count);
+            if (msgCount === 1 && recipientSocketId) {
+                io.to(recipientSocketId).emit('newConversation', {
+                    id: senderId,
+                    email: senderEmail,
+                    username: senderUsername
+                });
+                io.to(senderSocketId).emit('newConversation', {
+                    id: recipientId,
+                    email: recipientEmail,
+                    username: recipientUsername
+                });
             }
 
         } catch (err) {

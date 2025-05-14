@@ -40,9 +40,22 @@ export default function MessagesPage() {
     // connect socket
     useEffect(() => {
         socketRef.current = io('http://localhost:6543');
+
+        const handleNewConversation = (newConvo: Conversation) => {
+            setConversations((prev) => {
+                const exists = prev.some((c) => c.id === newConvo.id);
+                if (exists) return prev;
+                return [newConvo, ...prev];
+            });
+        };
+
+        socketRef.current.on('newConversation', handleNewConversation);
+
         return () => {
+            socketRef.current?.off('newConversation', handleNewConversation);
             socketRef.current?.disconnect();
         };
+
     }, []);
 
     useEffect(() => {
@@ -140,6 +153,8 @@ export default function MessagesPage() {
         // const interval = setInterval(fetchConversations, 2000); // update every 2 seconds
 
         // return () => clearInterval(interval);
+
+
     }, []);
 
     // fetch messages when a conversation is selected
@@ -187,50 +202,59 @@ export default function MessagesPage() {
     };
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-[#f1e9e6] text-[#23262a]">
             <div className="w-1/4 p-4 border-r">
-                <button
-                    className="mb-4 bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600"
-                    onClick={() => setShowUserList(!showUserList)}
-                >
-                    New Message
-                </button>
+                <div className="flex flex-col items-center">
+                    <div className="flex justify-center space-x-4 mb-4">
+                        <button
+                            className="bg-green-500 text-white border-2 border-green-600 py-1 px-3 rounded hover:bg-green-600"
+                            onClick={() => setShowUserList(!showUserList)}
+                        >
+                            New Conversation
+                        </button>
 
-                {showUserList && (
-                    <ul className="mb-4 max-h-40 overflow-y-auto border rounded p-2 bg-black">
-                        {allUsers.map((user) => (
-                            <li
-                                key={user.id}
-                                onClick={() => {
-                                    setSelectedConversation(user);
-                                    setShowUserList(false);
-                                }}
-                                className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                            >
-                                {user.username ?? user.email}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-                
-                <button 
-                    className="mb-4 ml-4 bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                    onClick = {handleLogout}
-                >
-                    Logout
-                </button>
+                        <button
+                            className="bg-red-500 border-2 border-red-600 text-white py-1 px-3 rounded hover:bg-red-600"
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </button>
+                    </div>
 
-                <h2 className="text-2xl font-semibold mb-4">Conversations</h2>
-                <ul className="mb-4 max-h-40 overflow-y-auto border rounded p-2 bg-black">
+                    {showUserList && (
+                        <ul className="max-h-40 overflow-y-auto border-2 border-green-600 rounded p-2 mb-3 bg-[#f1e9e6] w-100">
+                            {allUsers.map((user) => (
+                                <li
+                                    key={user.id}
+                                    onClick={() => {
+                                        setSelectedConversation(user);
+                                        setShowUserList(false);
+                                    }}
+                                    className="cursor-pointer text-black hover:bg-green-300 p-2 rounded"
+                                >
+                                    {user.username ?? user.email}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="flex flex-col items-center">
+                    <h2 className="text-4xl font-semibold mb-4 justify-center">Conversations</h2>
+                </div>
+                <ul className="text-2xl mb-4 h-180 overflow-y-auto border rounded p-2 bg-[#f1e9e6]">
+                <div className="flex flex-col items-center">
                     {conversations.map((conversation) => (
+                        
                         <li
                             key={conversation.id}
                             onClick={() => setSelectedConversation(conversation)}
-                            className="cursor-pointer hover:bg-gray-200 p-2 rounded"
+                            className="cursor-pointer hover:bg-gray-400 p-2 rounded justify-center"
                         >
                             {conversation.username ?? conversation.email ?? 'Unnamed'}
                         </li>
                     ))}
+                    </div>
                 </ul>
             </div>
 

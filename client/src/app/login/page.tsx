@@ -43,7 +43,7 @@ export default function LoginPage() {
             >
                 <video
                     className="absolute inset-0 w-full h-full object-cover"
-                    src="/backgroundvid.mp4" // 🟡 Put your video in /public
+                    src="/backgroundvid.mp4"
                     autoPlay
                     loop
                     muted

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
+import { Plus, LogOut, Settings } from 'lucide-react';
 
 
 interface Message {
@@ -16,7 +17,61 @@ interface Conversation {
     id: string;
     email: string;
     username?: string;
+    avatar: string;
+    lastMessage?: string;
+    timestamp: string;
 }
+
+function ChatItem({ username, avatar, timestamp, lastMessage }: Conversation) {
+    return (
+        <div className="flex items-center justify-between px-4 py-4 hover:bg-gray-100 transition cursor-pointer">
+            <div className="flex items-center space-x-3">
+                <img
+                    src={avatar ? `http://localhost:6543${avatar}` : '/echologo.png'}
+                    alt="avatar"
+                    className="w-14 h-14 rounded-full object-cover"
+                    onError={(e) => {
+                        e.currentTarget.src = '/echologo.png';
+                    }}
+                />
+                <div className="ml-4">
+                    <p className="text-xl font-semibold text-black">{username}</p>
+                    <p className="text-m text-gray-600 truncate w-70">{lastMessage}</p>
+                </div>
+            </div>
+            <div className="text-s text-gray-400 text-right min-w-[50px]">
+                <p>{new Date(timestamp).toLocaleString('en-US', {
+                    timeZone: 'America/Los_Angeles',
+                    month: 'short',
+                    day: 'numeric',
+
+                })}</p>
+            </div>
+        </div>
+    );
+}
+
+function NewChatItem({ username, avatar }: Conversation) {
+    return (
+        <div className="flex items-center justify-between px-4 py-1 transition cursor-pointer">
+            <div className="flex items-center space-x-3">
+                <img
+                    src={avatar ? `http://localhost:6543${avatar}` : '/echologo.png'}
+                    alt="avatar"
+                    className="w-14 h-14 rounded-full object-cover"
+                    onError={(e) => {
+                        e.currentTarget.src = '/echologo.png';
+                    }}
+                />
+                <div className="text-xl ml-2">
+                    <p className="font-semibold text-black">{username}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
 
 export default function MessagesPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -32,8 +87,11 @@ export default function MessagesPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevMessageCountRef = useRef<number>(0);
     const socketRef = useRef<Socket | null>(null);
-    const handleLogout = () => {
-        localStorage.removeItem('token');
+    const handleLogout = async () => {
+        await fetch('http://localhost:6543/api/signout', {
+            method: 'POST',
+            credentials: 'include',
+        });
         router.push('/login');
     };
 
@@ -41,12 +99,13 @@ export default function MessagesPage() {
     useEffect(() => {
         socketRef.current = io('http://localhost:6543');
 
-        const handleNewConversation = (newConvo: Conversation) => {
+        const handleNewConversation = async (newConvo: Conversation) => {
             setConversations((prev) => {
                 const exists = prev.some((c) => c.id === newConvo.id);
                 if (exists) return prev;
                 return [newConvo, ...prev];
             });
+            await fetchUsers();
         };
 
         socketRef.current.on('newConversation', handleNewConversation);
@@ -61,13 +120,31 @@ export default function MessagesPage() {
     useEffect(() => {
         if (!socketRef.current) return;
         const handleReceiveMessage = (message: Message) => {
+            // 1. Append to message view if current conversation is open
             if (
                 selectedConversation &&
                 (message.senderId === selectedConversation.id || message.senderId === currentUserId)
             ) {
                 setMessages((prev) => [...prev, message]);
             }
-        }
+
+            // 2. Update conversations list (last message + timestamp + reorder)
+            setConversations((prev) => {
+                const otherId = message.senderId === currentUserId ? selectedConversation?.id : message.senderId;
+
+                const updated = prev.map((conv) =>
+                    conv.id === otherId
+                        ? { ...conv, lastMessage: message.content, timestamp: message.timestamp }
+                        : conv
+                );
+
+                const sorted = [...updated].sort(
+                    (a, b) => new Date(b.timestamp ?? 0).getTime() - new Date(a.timestamp ?? 0).getTime()
+                );
+
+                return sorted;
+            });
+        };
 
         socketRef.current.on('receive_message', handleReceiveMessage);
 
@@ -86,15 +163,16 @@ export default function MessagesPage() {
 
     // labeling messages
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+
 
         const fetchMe = async () => {
             const res = await fetch('http://localhost:6543/api/me', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                credentials: 'include'
             });
+            if (!res.ok) {
+                console.error('Failed to fetch users:', res.status);
+                return;
+            }
             const data = await res.json();
             setCurrentUserEmail(data.email);
             setCurrentUserId(data.id);
@@ -105,55 +183,59 @@ export default function MessagesPage() {
         fetchMe();
     }, []);
 
+    const fetchUsers = async () => {
+        const res = await fetch('http://localhost:6543/api/users', {
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            console.error('Failed to fetch users:', res.status);
+            return;
+        }
+        const data = await res.json();
+        const formatted = data.users.map((user: any) => ({
+            username: user.username,
+            id: user.id,
+            avatar: user.avatar || '',
+        }));
 
+        setAllUsers(formatted);
+    };
 
     // fetch possible new users to talk to
     useEffect(() => {
         // fetch users only once on mount
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        const fetchUsers = async () => {
-            const res = await fetch('http://localhost:6543/api/users', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            setAllUsers(data.users);
-        };
 
         fetchUsers();
-
-        // const interval = setInterval(fetchUsers, 10000);
-        // return () => clearInterval(interval);
 
     }, []);
 
     // fetch conversations when the page loads
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
+
 
         const fetchConversations = async () => {
             const res = await fetch('http://localhost:6543/api/conversations', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                credentials: 'include'
+
             });
+            if (!res.ok) {
+                console.error('Failed to fetch users:', res.status);
+                return;
+            }
             const data = await res.json();
-            setConversations(data.conversations);
+
+            const formatted = data.conversations.map((conv: any) => ({
+                username: conv.username,
+                email: conv.email,
+                id: conv.id,
+                avatar: conv.avatar,
+                lastMessage: conv.lastMessage,
+                timestamp: conv.timestamp,
+            }));
+            setConversations(formatted);
         };
 
         fetchConversations(); // initial load
-        // const interval = setInterval(fetchConversations, 2000); // update every 2 seconds
-
-        // return () => clearInterval(interval);
-
 
     }, []);
 
@@ -163,38 +245,43 @@ export default function MessagesPage() {
 
         const fetchMessages = async () => {
             const res = await fetch(`http://localhost:6543/api/conversations/${selectedConversation.id}/messages`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
+                credentials: 'include'
             });
-
+            if (!res.ok) {
+                console.error('Failed to fetch users:', res.status);
+                return;
+            }
             const data = await res.json();
             setMessages(data.messages);
         };
 
-        fetchMessages(); // fetch immediately when conversation is selected
-
-        // const interval = setInterval(fetchMessages, 2000);
-
-        // return () => clearInterval(interval);
+        fetchMessages();
     }, [selectedConversation]);
 
     // handle when user sends a new message in current conversation
     const handleSendMessage = async () => {
         if (newMessage.trim() && selectedConversation) {
-            // const res = await fetch(`http://localhost:6543/api/conversations/${selectedConversation?.id}/messages`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            //     },
-            //     body: JSON.stringify({ content: newMessage }),
-            // });
-
-            socketRef.current?.emit('send_message', {
+            const messageData = {
                 senderId: currentUserId,
                 recipientId: selectedConversation.id,
                 content: newMessage,
+            };
+
+            socketRef.current?.emit('send_message', messageData);
+
+            const now = new Date().toISOString();
+
+            // update conversation list optimistically
+            setConversations((prev) => {
+                const updated = prev.map((conv) =>
+                    conv.id === selectedConversation.id
+                        ? { ...conv, lastMessage: newMessage, timestamp: now }
+                        : conv
+                );
+
+                return updated.sort(
+                    (a, b) => new Date(b.timestamp ?? 0).getTime() - new Date(a.timestamp ?? 0).getTime()
+                );
             });
 
             setNewMessage('');
@@ -203,59 +290,64 @@ export default function MessagesPage() {
 
     return (
         <div className="flex min-h-screen bg-[#f1e9e6] text-[#23262a]">
-            <div className="w-1/4 p-4 border-r">
-                <div className="flex flex-col items-center">
-                    <div className="flex justify-center space-x-4 mb-4">
-                        <button
-                            className="bg-green-500 text-white border-2 border-green-600 py-1 px-3 rounded hover:bg-green-600"
-                            onClick={() => setShowUserList(!showUserList)}
-                        >
-                            New Conversation
-                        </button>
+            <div className="w-full max-w-1/5 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="relative flex items-center justify-between px-4 py-3 border-b">
+                    <h2 className="text-2xl font-bold">Chats (as {currentUsername})</h2>
+                    <div className="flex items-center space-x-2">
+                        <div className="">
+                            <button
+                                className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                                onClick={() => setShowUserList(!showUserList)}
+                                aria-label="New Conversation"
+                            >
+                                <Plus size={18} />
+                            </button>
 
+                            {showUserList && (
+                                <ul className="absolute left-0 right-0 top-12 z-50 max-h-60 w-full overflow-y-auto border-5 border-green-600 rounded bg-white shadow-lg">
+                                    {allUsers.map((user) => (
+                                        <div
+                                            key={user.id}
+                                            onClick={() => {
+                                                setSelectedConversation(user);
+                                                setShowUserList(false);
+                                            }}
+                                            className="cursor-pointer text-black hover:bg-green-300 p-2 rounded"
+                                        >
+                                            <NewChatItem {...user} />
+                                        </div>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                         <button
-                            className="bg-red-500 border-2 border-red-600 text-white py-1 px-3 rounded hover:bg-red-600"
+                            className="bg-blue-500 text-white p-2 rounded hover:bg-gray-300"
+                            onClick={() => console.log('Settings clicked')}
+                            aria-label="Settings"
+                        >
+                            <Settings size={18} />
+                        </button>
+                        <button
+                            className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
                             onClick={handleLogout}
+                            aria-label="Logout"
                         >
-                            Logout
+                            <LogOut size={18} />
                         </button>
                     </div>
-
-                    {showUserList && (
-                        <ul className="max-h-40 overflow-y-auto border-2 border-green-600 rounded p-2 mb-3 bg-[#f1e9e6] w-100">
-                            {allUsers.map((user) => (
-                                <li
-                                    key={user.id}
-                                    onClick={() => {
-                                        setSelectedConversation(user);
-                                        setShowUserList(false);
-                                    }}
-                                    className="cursor-pointer text-black hover:bg-green-300 p-2 rounded"
-                                >
-                                    {user.username ?? user.email}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
                 </div>
 
-                <div className="flex flex-col items-center">
-                    <h2 className="text-4xl font-semibold mb-4 justify-center">Conversations</h2>
-                </div>
-                <ul className="text-2xl mb-4 h-180 overflow-y-auto border rounded p-2 bg-[#f1e9e6]">
-                <div className="flex flex-col items-center">
-                    {conversations.map((conversation) => (
-                        
-                        <li
-                            key={conversation.id}
-                            onClick={() => setSelectedConversation(conversation)}
-                            className="cursor-pointer hover:bg-gray-400 p-2 rounded justify-center"
+                <div>
+                    {conversations.map((conv) => (
+                        <div
+                            key={conv.id}
+                            onClick={() => setSelectedConversation(conv)}
+                            className="hover:bg-gray-100 cursor-pointer"
                         >
-                            {conversation.username ?? conversation.email ?? 'Unnamed'}
-                        </li>
+                            <ChatItem {...conv} />
+                        </div>
                     ))}
-                    </div>
-                </ul>
+                </div>
             </div>
 
             <div className="flex-1 p-4">
@@ -271,6 +363,9 @@ export default function MessagesPage() {
                                     <div>{message.content}</div>
                                     <div className="text-sm text-gray-400">{new Date(message.timestamp).toLocaleString('en-US', {
                                         timeZone: 'America/Los_Angeles',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit',
                                         hour12: true,

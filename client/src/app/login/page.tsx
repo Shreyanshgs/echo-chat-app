@@ -15,6 +15,7 @@ export default function LoginPage() {
         // send POST request to signin route
         const res = await fetch('http://localhost:6543/api/signin', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         });

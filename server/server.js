@@ -8,9 +8,37 @@ const express = require('express');
 const app = express();
 
 const cors = require('cors');
-app.use(cors());
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true,              
+  };
+  
+  app.use(cors(corsOptions));
 
 app.use(express.json());
+
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, uniqueName);
+    },
+});
+const upload = multer({ storage });
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 if (!process.env.JWT_SECRET || !process.env.DATABASE_URL) {
     throw new Error('Missing environment variables. Please check your .env file.');
@@ -25,7 +53,7 @@ const pool = new Pool({
 });
 
 // SIGN-UP ROUTE
-app.post('/api/signup', async (req, res) => {
+app.post('/api/signup', upload.single('avatar'), async (req, res) => {
 
     // grabs email, password inputs from request to sign up
     const { email, username, password } = req.body;
@@ -46,8 +74,10 @@ app.post('/api/signup', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        const avatarUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
         // insert email, hashed password into user database
-        await pool.query('INSERT INTO users (email, username, password_hash) VALUES ($1, $2, $3)', [email, username, hashedPassword]);
+        await pool.query('INSERT INTO users (email, username, password_hash, avatar) VALUES ($1, $2, $3, $4)', [email, username, hashedPassword, avatarUrl]);
 
         // tell client it was able to process sign-up
         res.status(201).json({ message: 'User created successfully' });
@@ -80,7 +110,14 @@ app.post('/api/signin', async (req, res) => {
 
         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ token });
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'Lax',
+            maxAge: 60 * 60 * 1000,
+        });
+
+        res.json({ message: 'Signed in successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -89,10 +126,9 @@ app.post('/api/signin', async (req, res) => {
 });
 
 
-// FETCH CONVERSATIONS
 app.get('/api/conversations', async (req, res) => {
-    const auth = req.headers.authorization;
-    const token = auth && auth.split(' ')[1];
+    const token = req.cookies.token;
+
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
@@ -104,17 +140,40 @@ app.get('/api/conversations', async (req, res) => {
 
         const result = await pool.query(
             `
+            WITH ranked_messages AS (
+                SELECT
+                    m.message,
+                    m.created_at,
+                    m.sender_id,
+                    m.recipient_id,
+                    u.id AS user_id,
+                    u.email AS user_email,
+                    u.username AS user_username,
+                    u.avatar AS user_avatar,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY CASE
+                            WHEN m.sender_id = $1 THEN m.recipient_id
+                            ELSE m.sender_id
+                        END
+                        ORDER BY m.created_at DESC
+                    ) AS rn
+                FROM messages m
+                JOIN users u ON u.id = CASE
+                    WHEN m.sender_id = $1 THEN m.recipient_id
+                    ELSE m.sender_id
+                END
+                WHERE m.sender_id = $1 OR m.recipient_id = $1
+            )
             SELECT
-              u.id AS user_id,
-              u.email AS user_email,
-              u.username AS user_username
-            FROM messages m
-            JOIN users u ON u.id = CASE
-              WHEN m.sender_id = $1 THEN m.recipient_id
-              ELSE m.sender_id
-            END
-            WHERE m.sender_id = $1 OR m.recipient_id = $1
-            GROUP BY u.id, u.email, u.username;
+                user_id,
+                user_email,
+                user_username,
+                user_avatar AS avatar,
+                message,
+                created_at
+            FROM ranked_messages
+            WHERE rn = 1
+            ORDER BY created_at DESC;
             `,
             [userId]
         );
@@ -122,10 +181,14 @@ app.get('/api/conversations', async (req, res) => {
         const conversations = result.rows.map((row) => ({
             id: row.user_id,
             email: row.user_email,
-            username: row.user_username, 
+            username: row.user_username,
+            avatar: row.avatar,
+            lastMessage: row.message,
+            timestamp: row.created_at,
         }));
 
         res.json({ conversations });
+
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -134,8 +197,8 @@ app.get('/api/conversations', async (req, res) => {
 
 // FETCH SELECTED CONVERSATIONS
 app.get('/api/conversations/:id/messages', async (req, res) => {
-    const auth = req.headers.authorization;
-    const token = auth && auth.split(' ')[1];
+    const token = req.cookies.token;
+
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -170,8 +233,7 @@ app.get('/api/conversations/:id/messages', async (req, res) => {
 
 // START NEW CONVERSATION
 app.get('/api/users', async (req, res) => {
-    const auth = req.headers.authorization;
-    const token = auth && auth.split(' ')[1];
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({ messages: 'Unauthorized' });
@@ -182,7 +244,7 @@ app.get('/api/users', async (req, res) => {
         const userId = decoded.id;
 
         const result = await pool.query(`
-        SELECT id, username
+        SELECT id, username, avatar
         FROM users
         WHERE id != $1
             AND id NOT IN (
@@ -205,8 +267,8 @@ app.get('/api/users', async (req, res) => {
 
 // SEND MESSAGE IN EXISTING CONVERSATION
 app.post('/api/conversations/:id/messages', async (req, res) => {
-    const auth = req.headers.authorization;
-    const token = auth && auth.split(' ')[1];
+    const token = req.cookies.token;
+
 
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
@@ -232,8 +294,8 @@ app.post('/api/conversations/:id/messages', async (req, res) => {
 
 // GET ME
 app.get('/api/me', async (req, res) => {
-    const auth = req.headers.authorization;
-    const token = auth && auth.split(' ')[1];
+    const token = req.cookies.token;
+
 
     if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -242,7 +304,7 @@ app.get('/api/me', async (req, res) => {
         const userId = decoded.id;
 
         const result = await pool.query(
-            'SELECT id, email, username FROM users WHERE id = $1',
+            'SELECT id, email, username, avatar FROM users WHERE id = $1',
             [userId]
         );
 
@@ -255,6 +317,7 @@ app.get('/api/me', async (req, res) => {
             id: user.id,
             email: user.email,
             username: user.username,
+            avatar: user.avatar,
         });
     } catch (err) {
         console.error(err);
@@ -262,6 +325,24 @@ app.get('/api/me', async (req, res) => {
     }
 });
 
+// upload avatar
+app.post('/api/user/avatar', upload.single('avatar'), async (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+
+        const avatarUrl = `/uploads/${req.file.filename}`;
+        await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatarUrl, userId]);
+
+        res.json({ message: 'Avatar uploaded successfully', avatar: avatarUrl });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
 
 // set up and run websocket server
 const http = require('http');
@@ -270,10 +351,10 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    }
+  cors: {
+    origin: 'http://localhost:3000',
+    credentials: true
+  }
 });
 
 const onlineUsers = new Map();
@@ -295,14 +376,16 @@ io.on('connection', (socket) => {
             );
 
             // Get sender's info
-            const senderRes = await pool.query('SELECT username, email FROM users WHERE id = $1', [senderId]);
+            const senderRes = await pool.query('SELECT username, email, avatar FROM users WHERE id = $1', [senderId]);
             const senderUsername = senderRes.rows[0]?.username || 'Unknown';
             const senderEmail = senderRes.rows[0]?.username || 'Unknown';
-            
+            const senderAvatar = senderRes.rows[0]?.avatar || null;
+
             // get recipient's info
-            const recipientRes = await pool.query('SELECT username, email FROM users WHERE id = $1', [recipientId]);
+            const recipientRes = await pool.query('SELECT username, email, avatar FROM users WHERE id = $1', [recipientId]);
             const recipientUsername = recipientRes.rows[0]?.username || 'Unknown';
             const recipientEmail = recipientRes.rows[0]?.username || 'Unknown';
+            const recipientAvatar = recipientRes.rows[0]?.avatar || null;
 
             // put message/metadata into container
             const messageData = {
@@ -330,20 +413,29 @@ io.on('connection', (socket) => {
                 [senderId, recipientId]
             );
 
+            const now = new Date().toISOString();
+
             // if new, tell sockets to add conversation to conversation list
             const msgCount = parseInt(convoCheck.rows[0].count);
             if (msgCount === 1 && recipientSocketId) {
                 io.to(recipientSocketId).emit('newConversation', {
-                    id: senderId,
-                    email: senderEmail,
-                    username: senderUsername
+                  id: senderId,
+                  email: senderEmail,
+                  username: senderUsername,
+                  avatar: senderAvatar,
+                  lastMessage: content,
+                  timestamp: now,
                 });
+              
                 io.to(senderSocketId).emit('newConversation', {
-                    id: recipientId,
-                    email: recipientEmail,
-                    username: recipientUsername
+                  id: recipientId,
+                  email: recipientEmail,
+                  username: recipientUsername,
+                  avatar: recipientAvatar,
+                  lastMessage: content,
+                  timestamp: now,
                 });
-            }
+              }
 
         } catch (err) {
             console.error('Error saving or sending message:', err);
@@ -363,18 +455,15 @@ io.on('connection', (socket) => {
 });
 
 
+app.post('/api/signout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: 'Signed out' });
+});
+
+
 server.listen(6543, '0.0.0.0', () => {
     console.log('🚀 Server is running on http://0.0.0.0:6543');
 });
 
 
-// TESTING CONNECTION
-// pool.connect()
-//   .then(() => {
-//     console.log("✅ Connected to Supabase DB!");
-//     return pool.end();
-//   })
-//   .catch(err => {
-//     console.error("❌ Connection failed:", err);
-//   });
 

@@ -1,6 +1,7 @@
 # Dependency folders
 node_modules/
 .next/
+uploads/
 
 # Build output
 .next/

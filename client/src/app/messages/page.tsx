@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Plus, LogOut, Settings } from 'lucide-react';
+import MessageBubble from './MessageBubble';
 
 
 interface Message {
@@ -289,8 +290,8 @@ export default function MessagesPage() {
     };
 
     return (
-        <div className="flex min-h-screen bg-[#f1e9e6] text-[#23262a]">
-            <div className="w-full max-w-1/5 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="flex h-screen bg-[#23262a] text-[#23262a]">
+            <div className="ml-3 my-2 w-full max-w-1/5 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
                 <div className="relative flex items-center justify-between px-4 py-3 border-b">
                     <h2 className="text-2xl font-bold">Chats (as {currentUsername})</h2>
                     <div className="flex items-center space-x-2">
@@ -349,42 +350,59 @@ export default function MessagesPage() {
                     ))}
                 </div>
             </div>
-
-            <div className="flex-1 p-4">
+            
+            <div className="mx-2 my-2 flex-1 p-4 bg-[#74bfd7] rounded-xl flex flex-col">
                 {selectedConversation ? (
                     <>
-                        <h2 className="text-2xl font-semibold mb-4">{selectedConversation.username ?? selectedConversation.email}</h2>
-                        <div className="space-y-4 h-[60vh] overflow-y-scroll border-b pb-4">
-                            {messages.map((message, index) => (
-                                <div key={index} className="flex flex-col">
-                                    <div className="font-semibold text-gray-600">
-                                        {message.senderId === currentUserId ? 'You' : message.senderUsername}
-                                    </div>
-                                    <div>{message.content}</div>
-                                    <div className="text-sm text-gray-400">{new Date(message.timestamp).toLocaleString('en-US', {
-                                        timeZone: 'America/Los_Angeles',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true,
-                                    })}</div>
+                        <div className="flex items-center justify-between border-b pb-3 mb-4 px-4">
+                            <div className="flex items-center space-x-3">
+                                <img
+                                    src={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
+                                    alt="avatar"
+                                    className="w-10 h-10 rounded-full object-cover"
+                                />
+                                <div>
+                                    <p className="font-semibold text-lg">{selectedConversation.username}</p>
                                 </div>
+                            </div>
+                            <div className="flex space-x-4 text-gray-500">
+                                <button title="Call">Call<i className="fas fa-phone" /></button>
+                                <button title="Video">Video<i className="fas fa-video" /></button>
+                                <button title="Info">Info<i className="fas fa-info-circle" /></button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto space-y-4 border-b pb-4">
+
+                            {messages.map((message, index) => (
+                                <MessageBubble
+                                    key={index}
+                                    content={message.content}
+                                    timestamp={message.timestamp}
+                                    senderId={message.senderId}
+                                    senderUsername={message.senderUsername}
+                                    currentUserId={currentUserId}
+                                />
                             ))}
                             <div ref={messagesEndRef} />
                         </div>
-                        <div className="mt-4">
+                        <div className="flex items-center px-4 py-2 bg-white rounded-full shadow mt-4 w-full">
                             <input
                                 type="text"
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
-                                className="w-full p-2 border rounded"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }
+                                }}
                                 placeholder="Type a message..."
+                                className="flex-1 px-4 py-2 rounded-full focus:outline-none text-sm text-black"
                             />
                             <button
                                 onClick={handleSendMessage}
-                                className="w-full bg-blue-500 text-white py-2 mt-2 rounded hover:bg-blue-600"
+                                className="ml-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
                             >
                                 Send
                             </button>

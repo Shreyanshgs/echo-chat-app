@@ -87,6 +87,7 @@
     --default-transition-timing-function: cubic-bezier(.4, 0, .2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
+    --font-zain: var(--font-zain);
   }
 }
 
@@ -723,6 +724,14 @@
     text-align: right;
   }
 
+  .font-lecker {
+    font-family: var(--font-leckerli-one);
+  }
+
+  .font-zain {
+    font-family: var(--font-zain);
+  }
+
   .text-2xl {
     font-size: var(--text-2xl);
     line-height: var(--tw-leading, var(--text-2xl--line-height));
@@ -958,9 +967,6 @@
   --foreground: #171717;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-climate: var(--font-climate-crisis);
-  --font-lecker: var(--font-leckerli-one);
-  --font-zain: var(--font-zain);
 }
 
 @media (prefers-color-scheme: dark) {

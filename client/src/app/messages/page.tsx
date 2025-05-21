@@ -37,7 +37,7 @@ function ChatItem({ username, avatar, timestamp, lastMessage }: Conversation) {
                 />
                 <div className="ml-4">
                     <p className="text-xl font-semibold text-black">{username}</p>
-                    <p className="text-m text-gray-600 truncate w-70">{lastMessage}</p>
+                    <p className="text-sm text-gray-600 truncate w-70">{lastMessage}</p>
                 </div>
             </div>
             <div className="text-s text-gray-400 text-right min-w-[50px]">

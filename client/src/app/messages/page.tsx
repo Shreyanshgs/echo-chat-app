@@ -45,7 +45,6 @@ function ChatItem({ username, avatar, timestamp, lastMessage }: Conversation) {
                     timeZone: 'America/Los_Angeles',
                     month: 'short',
                     day: 'numeric',
-
                 })}</p>
             </div>
         </div>
@@ -291,7 +290,7 @@ export default function MessagesPage() {
 
     return (
         <div className="flex h-screen bg-[#23262a] text-[#23262a]">
-            <div className="ml-3 my-2 w-full max-w-1/5 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="ml-3 my-2 w-full max-w-1/4 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
                 <div className="relative flex items-center justify-between px-4 py-3 border-b">
                     <h2 className="text-2xl font-bold">Chats (as {currentUsername})</h2>
                     <div className="flex items-center space-x-2">
@@ -382,6 +381,10 @@ export default function MessagesPage() {
                                     senderId={message.senderId}
                                     senderUsername={message.senderUsername}
                                     currentUserId={currentUserId}
+                                    image={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
+                                    prevMessageTime={
+                                        index > 0 ? messages[index - 1].timestamp : null
+                                    }
                                 />
                             ))}
                             <div ref={messagesEndRef} />

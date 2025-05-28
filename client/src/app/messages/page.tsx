@@ -349,7 +349,7 @@ export default function MessagesPage() {
                     ))}
                 </div>
             </div>
-            
+
             <div className="mx-2 my-2 flex-1 p-4 bg-[#74bfd7] rounded-xl flex flex-col">
                 {selectedConversation ? (
                     <>
@@ -371,24 +371,38 @@ export default function MessagesPage() {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-4 border-b pb-4">
+                        <div className="flex-1 overflow-y-auto border-b pb-4">
+                            {messages.map((message, index) => {
+                                const prev = messages[index - 1];
+                                const next = messages[index + 1];
+                                const sameSender = next && next.senderId === message.senderId;
+                                const within5min = next && Math.abs(new Date(message.timestamp).getTime() - new Date(next.timestamp).getTime()) <= 5 * 60 * 1000;
 
-                            {messages.map((message, index) => (
-                                <MessageBubble
-                                    key={index}
-                                    content={message.content}
-                                    timestamp={message.timestamp}
-                                    senderId={message.senderId}
-                                    senderUsername={message.senderUsername}
-                                    currentUserId={currentUserId}
-                                    image={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
-                                    prevMessageTime={
-                                        index > 0 ? messages[index - 1].timestamp : null
-                                    }
-                                />
-                            ))}
+                                const showAvatar = !sameSender || !within5min;
+
+                                const prevSameSender = prev && prev.senderId === message.senderId;
+                                const prevWithin5min = prev && Math.abs(new Date(message.timestamp).getTime() - new Date(prev.timestamp).getTime()) <= 5 * 60 * 1000;
+
+                                const isGroupedWithPrev = prevSameSender && prevWithin5min;
+
+                                return (
+                                    <div key={index} className={`${isGroupedWithPrev ? '' : 'mt-4'} pb-1`}>
+                                        <MessageBubble
+                                            content={message.content}
+                                            timestamp={message.timestamp}
+                                            senderId={message.senderId}
+                                            senderUsername={message.senderUsername}
+                                            currentUserId={currentUserId}
+                                            image={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
+                                            prevMessageTime={index > 0 ? messages[index - 1].timestamp : null}
+                                            showAvatar={showAvatar}
+                                        />
+                                    </div>
+                                );
+                            })}
                             <div ref={messagesEndRef} />
                         </div>
+
                         <div className="flex items-center px-4 py-2 bg-white rounded-full shadow mt-4 w-full">
                             <input
                                 type="text"

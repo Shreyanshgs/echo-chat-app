@@ -10,10 +10,10 @@ const app = express();
 const cors = require('cors');
 const corsOptions = {
     origin: 'http://localhost:3000',
-    credentials: true,              
-  };
-  
-  app.use(cors(corsOptions));
+    credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
@@ -77,10 +77,19 @@ app.post('/api/signup', upload.single('avatar'), async (req, res) => {
         const avatarUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
         // insert email, hashed password into user database
-        await pool.query('INSERT INTO users (email, username, password_hash, avatar) VALUES ($1, $2, $3, $4)', [email, username, hashedPassword, avatarUrl]);
-
+        const result = await pool.query(
+            'INSERT INTO users (email, username, password_hash, avatar) VALUES ($1, $2, $3, $4) RETURNING id',
+            [email, username, hashedPassword, avatarUrl]
+        );
+        const newUserId = result.rows[0].id;
         // tell client it was able to process sign-up
         res.status(201).json({ message: 'User created successfully' });
+
+        io.emit('newUser', {
+            id: newUserId,
+            username,
+            avatar: avatarUrl,
+        });
     } catch (err) {
         // something went wrong
         console.error(err);
@@ -344,6 +353,28 @@ app.post('/api/user/avatar', upload.single('avatar'), async (req, res) => {
     }
 });
 
+app.patch('/api/me', async (req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { username, email, avatar } = req.body;
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+
+        await pool.query(
+            'UPDATE users SET username = $1, email = $2, avatar = $3 WHERE id = $4',
+            [username, email, avatar, userId]
+        );
+
+        res.json({ message: 'Profile updated successfully ' });
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // set up and run websocket server
 const http = require('http');
 const { Server } = require('socket.io');
@@ -351,10 +382,10 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:3000',
-    credentials: true
-  }
+    cors: {
+        origin: 'http://localhost:3000',
+        credentials: true
+    }
 });
 
 const onlineUsers = new Map();
@@ -417,25 +448,32 @@ io.on('connection', (socket) => {
 
             // if new, tell sockets to add conversation to conversation list
             const msgCount = parseInt(convoCheck.rows[0].count);
-            if (msgCount === 1 && recipientSocketId) {
-                io.to(recipientSocketId).emit('newConversation', {
-                  id: senderId,
-                  email: senderEmail,
-                  username: senderUsername,
-                  avatar: senderAvatar,
-                  lastMessage: content,
-                  timestamp: now,
-                });
-              
-                io.to(senderSocketId).emit('newConversation', {
-                  id: recipientId,
-                  email: recipientEmail,
-                  username: recipientUsername,
-                  avatar: recipientAvatar,
-                  lastMessage: content,
-                  timestamp: now,
-                });
-              }
+            if (msgCount === 1) {
+                const now = new Date().toISOString();
+
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('newConversation', {
+                        id: senderId,
+                        email: senderEmail,
+                        username: senderUsername,
+                        avatar: senderAvatar,
+                        lastMessage: content,
+                        timestamp: now,
+                    });
+                }
+
+                if (senderSocketId) {
+                    io.to(senderSocketId).emit('newConversation', {
+                        id: recipientId,
+                        email: recipientEmail,
+                        username: recipientUsername,
+                        avatar: recipientAvatar,
+                        lastMessage: content,
+                        timestamp: now,
+                    });
+                }
+            }
+
 
         } catch (err) {
             console.error('Error saving or sending message:', err);

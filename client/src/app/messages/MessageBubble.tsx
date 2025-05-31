@@ -40,9 +40,18 @@ export default function MessageBubble({
                         <div className="w-7 h-7">
                             {showAvatar ? (
                                 <img
-                                    src={image}
+                                    src={
+                                        image
+                                            ? image.startsWith('/uploads/')
+                                                ? `http://localhost:6543${image}`
+                                                : image
+                                            : '/echologo.png'
+                                    }
                                     alt="avatar"
                                     className="w-7 h-7 rounded-full object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.src = '/echologo.png';
+                                    }}
                                 />
                             ) : (
                                 <div className="w-7 h-7" />

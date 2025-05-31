@@ -28,7 +28,13 @@ function ChatItem({ username, avatar, timestamp, lastMessage }: Conversation) {
         <div className="flex items-center justify-between px-4 py-4 hover:bg-gray-100 transition cursor-pointer">
             <div className="flex items-center space-x-3">
                 <img
-                    src={avatar ? `http://localhost:6543${avatar}` : '/echologo.png'}
+                    src={
+                        avatar
+                            ? avatar.startsWith('/uploads/')
+                                ? `http://localhost:6543${avatar}`
+                                : avatar
+                            : '/echologo.png'
+                    }
                     alt="avatar"
                     className="w-14 h-14 rounded-full object-cover"
                     onError={(e) => {
@@ -56,7 +62,13 @@ function NewChatItem({ username, avatar }: Conversation) {
         <div className="flex items-center justify-between px-4 py-1 transition cursor-pointer">
             <div className="flex items-center space-x-3">
                 <img
-                    src={avatar ? `http://localhost:6543${avatar}` : '/echologo.png'}
+                    src={
+                        avatar
+                            ? avatar.startsWith('/uploads/')
+                                ? `http://localhost:6543${avatar}`
+                                : avatar
+                            : '/echologo.png'
+                    }
                     alt="avatar"
                     className="w-14 h-14 rounded-full object-cover"
                     onError={(e) => {
@@ -83,10 +95,13 @@ export default function MessagesPage() {
     const [currentUserEmail, setCurrentUserEmail] = useState('');
     const [currentUserId, setCurrentUserId] = useState('');
     const [currentUsername, setCurrentUsername] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
     const router = useRouter();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevMessageCountRef = useRef<number>(0);
     const socketRef = useRef<Socket | null>(null);
+    const [showSettings, setShowSettings] = useState(false)
+
     const handleLogout = async () => {
         await fetch('http://localhost:6543/api/signout', {
             method: 'POST',
@@ -116,6 +131,25 @@ export default function MessagesPage() {
         };
 
     }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+    
+        const handleNewUser = (user: Conversation) => {
+            setAllUsers(prev => {
+                // avoid duplicates
+                if (prev.some(u => u.id === user.id)) return prev;
+                return [...prev, user];
+            });
+        };
+    
+        socketRef.current.on('newUser', handleNewUser);
+    
+        return () => {
+            socketRef.current?.off('newUser', handleNewUser);
+        };
+    }, []);
+    
 
     useEffect(() => {
         if (!socketRef.current) return;
@@ -177,6 +211,7 @@ export default function MessagesPage() {
             setCurrentUserEmail(data.email);
             setCurrentUserId(data.id);
             setCurrentUsername(data.username);
+            setAvatarUrl(data.avatar || '');
             socketRef.current?.emit('register', data.id);
         };
 
@@ -288,6 +323,31 @@ export default function MessagesPage() {
         }
     };
 
+    const handleSaveSettings = async () => {
+        try {
+            const res = await fetch('http://localhost:6543/api/me', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    username: currentUsername,
+                    email: currentUserEmail,
+                    avatar: avatarUrl,
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to update profile');
+            alert('Profile updated!');
+            setShowSettings(false);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save settings.');
+        }
+    };
+
+
     return (
         <div className="flex h-screen bg-[#23262a] text-[#23262a]">
             <div className="ml-3 my-2 w-full max-w-1/4 mx-auto bg-white rounded-xl shadow-md overflow-hidden">
@@ -320,13 +380,60 @@ export default function MessagesPage() {
                                 </ul>
                             )}
                         </div>
-                        <button
-                            className="bg-blue-500 text-white p-2 rounded hover:bg-gray-300"
-                            onClick={() => console.log('Settings clicked')}
-                            aria-label="Settings"
-                        >
-                            <Settings size={18} />
-                        </button>
+                        <div className="">
+                            <button
+                                className="bg-blue-500 text-white p-2 rounded hover:bg-gray-300"
+                                onClick={() => setShowSettings(!showSettings)}
+                                aria-label="Settings"
+                            >
+                                <Settings size={18} />
+                            </button>
+                            {showSettings && (
+                                <div className="absolute right-2 top-16 z-50 w-[300px] bg-white border border-gray-300 rounded-lg shadow-lg p-4 space-y-3">
+                                    <h2 className="text-lg font-bold text-black">Edit Profile</h2>
+                                    <div>
+                                        <label className="text-sm font-medium text-black">Username</label>
+                                        <input
+                                            className="w-full border rounded px-2 py-1 text-black"
+                                            value={currentUsername}
+                                            onChange={(e) => setCurrentUsername(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-black">Email</label>
+                                        <input
+                                            className="w-full border rounded px-2 py-1 text-black"
+                                            value={currentUserEmail}
+                                            onChange={(e) => setCurrentUserEmail(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-black">Profile Picture URL</label>
+                                        <input
+                                            className="w-full border rounded px-2 py-1 text-black"
+                                            placeholder="https://example.com/avatar.jpg"
+                                            value={avatarUrl}
+                                            onChange={(e) => setAvatarUrl(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex justify-end space-x-2 pt-2">
+                                        <button
+                                            onClick={() => setShowSettings(false)}
+                                            className="px-3 py-1 border text-black rounded"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveSettings}
+                                            className="px-3 py-1 bg-blue-600 text-white rounded"
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
                         <button
                             className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
                             onClick={handleLogout}
@@ -356,7 +463,13 @@ export default function MessagesPage() {
                         <div className="flex items-center justify-between border-b pb-3 mb-4 px-4">
                             <div className="flex items-center space-x-3">
                                 <img
-                                    src={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
+                                    src={
+                                        selectedConversation.avatar
+                                            ? selectedConversation.avatar.startsWith('/uploads/')
+                                                ? `http://localhost:6543${selectedConversation.avatar}`
+                                                : selectedConversation.avatar
+                                            : '/echologo.png'
+                                    }
                                     alt="avatar"
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -393,7 +506,13 @@ export default function MessagesPage() {
                                             senderId={message.senderId}
                                             senderUsername={message.senderUsername}
                                             currentUserId={currentUserId}
-                                            image={selectedConversation.avatar ? `http://localhost:6543${selectedConversation.avatar}` : '/echologo.png'}
+                                            image={
+                                                selectedConversation.avatar
+                                                    ? selectedConversation.avatar.startsWith('/uploads/')
+                                                        ? `http://localhost:6543${selectedConversation.avatar}`
+                                                        : selectedConversation.avatar
+                                                    : '/echologo.png'
+                                            }
                                             prevMessageTime={index > 0 ? messages[index - 1].timestamp : null}
                                             showAvatar={showAvatar}
                                         />
